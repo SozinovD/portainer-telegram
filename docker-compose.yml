@@ -1,0 +1,14 @@
+services:
+  portainer-telegram:
+    build: .
+    image: portainer-telegram:latest
+    container_name: portainer-telegram
+    restart: unless-stopped
+    environment:
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      PORTAINER_URL: ${PORTAINER_URL:-http://host.docker.internal:9000}
+      PORTAINER_API_KEY: ${PORTAINER_API_KEY}
+      PORTAINER_ENDPOINT_ID: ${PORTAINER_ENDPOINT_ID:-}
+      ALLOWED_CHAT_IDS: ${ALLOWED_CHAT_IDS:-}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
