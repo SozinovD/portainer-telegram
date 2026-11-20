@@ -1,7 +1,7 @@
 services:
   portainer-telegram:
     build: .
-    image: portainer-telegram:latest
+    image: ghcr.io/sozinovd/portainer-telegram:latest
     container_name: portainer-telegram
     restart: unless-stopped
     environment:

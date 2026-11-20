@@ -22,19 +22,13 @@ Telegram-бот — минималистичный UI для управлени�
 
 ## Развёртывание в Portainer
 
-1. Соберите образ на хосте с Portainer:
-
-   ```bash
-   git clone <this-repo> && cd portainer-telegram
-   docker build -t portainer-telegram:latest .
-   ```
-
-2. Portainer → **Stacks → Add stack** → Web editor, вставьте:
+1. Portainer → **Stacks → Add stack** → Web editor, вставьте
+   (образ публикуется в GHCR из `main`):
 
    ```yaml
    services:
      portainer-telegram:
-       image: portainer-telegram:latest
+       image: ghcr.io/sozinovd/portainer-telegram:latest
        restart: unless-stopped
        environment:
          TELEGRAM_BOT_TOKEN: <токен>
@@ -45,11 +39,27 @@ Telegram-бот — минималистичный UI для управлени�
          - "host.docker.internal:host-gateway"
    ```
 
-3. **Deploy the stack** и напишите боту `/ps`.
+2. **Deploy the stack** и напишите боту `/ps`.
 
 > `PORTAINER_URL`:
 > - `http://host.docker.internal:9000` — порт Portainer опубликован на хосте (по умолчанию);
 > - `http://portainer:9000` — если поместить контейнер в ту же docker-сеть, что и сервер Portainer.
+
+### Сборка из исходников (форкам)
+
+```bash
+git clone <this-repo> && cd portainer-telegram
+docker build -t portainer-telegram:latest .
+```
+
+и используйте `image: portainer-telegram:latest` в stack.
+
+## CI
+
+GitHub Actions (`.github/workflows/docker.yml`) на каждый push в `main` и теги `v*`:
+собирает multi-arch образ (`linux/amd64`, `linux/arm64`) и публикует в
+`ghcr.io/sozinovd/portainer-telegram`. Теги образа: `latest` (main), `X.Y.Z` /
+`X.Y` (git-теги), `sha-<commit>`.
 
 ## Локальный запуск (для разработки)
 
