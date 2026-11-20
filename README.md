@@ -56,10 +56,14 @@ docker build -t portainer-telegram:latest .
 
 ## CI
 
-GitHub Actions (`.github/workflows/docker.yml`) на каждый push в `main` и теги `v*`:
-собирает multi-arch образ (`linux/amd64`, `linux/arm64`) и публикует в
-`ghcr.io/sozinovd/portainer-telegram`. Теги образа: `latest` (main), `X.Y.Z` /
-`X.Y` (git-теги), `sha-<commit>`.
+GitHub Actions (`.github/workflows/docker.yml`):
+
+- На каждый push в `main` создаётся git-тег со следующей patch-версией
+  (`v0.1.0`, `v0.1.1`, …), а multi-arch образ (`linux/amd64`, `linux/arm64`)
+  публикуется в `ghcr.io/sozinovd/portainer-telegram` с этим же тегом
+  (+ `latest` и `sha-<commit>`).
+- Ручной push тега `v*` тоже собирает образ с этим тегом.
+- PR в `main` — только сборка, без публикации.
 
 ## Локальный запуск (для разработки)
 

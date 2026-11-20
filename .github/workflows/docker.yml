@@ -6,14 +6,57 @@ on:
     tags: ["v*"]
   pull_request:
     branches: [main]
-  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  tag:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.next.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: next
+        run: |
+          git fetch --tags --force
+          latest=$(git tag -l 'v*' | sed 's/^v//' | sort -V | tail -n 1)
+          if [ -z "$latest" ]; then
+            next="v0.1.0"
+          else
+            next="v$(echo "$latest" | awk -F. '{ $NF++; OFS="."; print }')"
+          fi
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "Latest tag: ${latest:-none}, next: $next"
+
+      - name: Create and push tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.next.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse -q --verify "refs/tags/$VERSION" >/dev/null; then
+            echo "Tag $VERSION already exists (re-run), reusing"
+            exit 0
+          fi
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "$VERSION"
+
+  build:
+    needs: tag
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,9 +77,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=${{ needs.tag.outputs.version }},enable=${{ needs.tag.outputs.version != '' }}
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest,enable={{is_default_branch}}
             type=sha,format=short
 
       - name: Login to GHCR
